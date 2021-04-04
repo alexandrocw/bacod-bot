@@ -10,22 +10,14 @@ mongoose.connect(config.mongoDbUri, {
 
 const Models = require('./models/models');
 
-const line = require('@line/bot-sdk');
-const lineConfig = {
-  channelAccessToken: config.channelAccessToken,
-  channelSecret: config.channelSecret
-}
-
 var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
 let webhookRouter = require('./routes/webhook');
-const { rawBodyMiddleware } = require('./middlewares/raw-body');
+let statusRouter = require('./routes/status');
 const { requestLogger } = require('./middlewares/request-logger');
-const { signatureValidator } = require('./middlewares/signature-validator');
-const { commandParser } = require('./middlewares/command-parser');
 
 const configureScheduledTasksUseCase = require('./use-cases/configure-scheduled-tasks');
 
@@ -43,12 +35,15 @@ Models.GroupChatConfig.find({}).exec().then(groupChatConfigs => {
 var app = express();
 
 app.use(logger('dev'));
-app.use(line.middleware(lineConfig));
-app.use(requestLogger);
-app.use(commandParser);
 app.use('/webhook', webhookRouter);
-app.use(function(err, req, res, next) {
-  console.log(err.stack);
+app.use('/status', statusRouter);
+app.use((err, req, res, next) => {
+  console.log(err.message);
+  console.log(JSON.stringify(err.stack));
+});
+
+app.listen(config.port, () => {
+  console.log(`Server started on port ${config.port}`);
 });
 
 module.exports = app;

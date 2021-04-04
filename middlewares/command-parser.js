@@ -7,35 +7,25 @@ module.exports.commandParser = async (req, res, next) => {
         return;
       }
       if (event.type === 'message' && event.message.type === 'text') {
-        let regex = new RegExp(`^@${config.botName}.*`);
-  
-        if (regex.test(event.message.text)) {
-          try {
-            let argsLine = "";
-            if (event.message.text.indexOf('\n') === -1){
-              argsLine = event.message.text;
-            } else {
-              argsLine = event.message.text.match(/(.*?)\n/)[1];
+        let text = event.message.text;
+          
+        if (new RegExp(`^@${config.botName}.*`).test(event.message.text)) {
+          let command = text.match(new RegExp(`^@${config.botName} (.*?)(\n|$)`))[1];
+
+          let commandComponents = command.split(' ');
+
+          if(commandComponents.length > 0) {
+            event.command = {
+              name: commandComponents.splice(0, 1)[0],
+              args: commandComponents,
+              body: (text.indexOf('\n') === -1) ? '' : text.substr(text.indexOf('\n') + 1),
+              raw: command
             }
-            let args = argsLine.split(' ');
-            args.splice(0, 1);
-      
-            if(args.length > 0) {
-              event.command = {
-                name: args[0],
-                value: args[args.length - 1],
-                body: event.message.text.substr(event.message.text.indexOf('\n'))
-              }
-            } else {
-              throw new Error(`Error parsing command. message: ${event.message.text}`);
-            }
-          } catch(err) {
-            next(err);
           } 
         }
       }
   
-      next()
+      next();
     });
   } catch (err) {
     next(err);
